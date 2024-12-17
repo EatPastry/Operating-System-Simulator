@@ -4,7 +4,8 @@
 #include "list.h"
 
 typedef struct NonBlockingQueue {
-  /* Add fields as needed */
+  struct List* front;
+  struct List* rear;
 } NonBlockingQueueT;
 
 void non_blocking_queue_create(NonBlockingQueueT* queue);
