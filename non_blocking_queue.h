@@ -1,3 +1,4 @@
+//Student: Joshua Gaynor ID: 20549366
 #ifndef _NON_BLOCKING_QUEUE_H_
 #define _NON_BLOCKING_QUEUE_H_
 
@@ -8,7 +9,7 @@ typedef struct NonBlockingQueue {
   struct List* rear;
 } NonBlockingQueueT;
 
-void non_blocking_queue_create(NonBlockingQueueT* queue);
+NonBlockingQueueT* non_blocking_queue_create();
 void non_blocking_queue_destroy(NonBlockingQueueT* queue);
 
 void non_blocking_queue_push(NonBlockingQueueT* queue, unsigned int value);
