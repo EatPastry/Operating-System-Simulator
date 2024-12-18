@@ -4,10 +4,12 @@
 #include "list.h"
 
 typedef struct BlockingQueue {
-  /* Add fields as needed */
+  struct List* front;
+  struct List* rear;
+  int term;
 } BlockingQueueT;
 
-void blocking_queue_create(BlockingQueueT* queue);
+void blocking_queue_create(BlockingQueueT** queue);
 void blocking_queue_destroy(BlockingQueueT* queue);
 
 void blocking_queue_push(BlockingQueueT* queue, unsigned int value);

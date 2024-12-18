@@ -6,47 +6,69 @@
 #include <stdio.h>
 
 void test_create_destroy() {
-  NonBlockingQueueT* queue = non_blocking_queue_create();
-  assert(non_blocking_queue_empty(queue));
+  NonBlockingQueueT* queue;
+  non_blocking_queue_create(&queue);
+  
+  assert(non_blocking_queue_empty(queue) == 1);
   assert(non_blocking_queue_length(queue) == 0);
   non_blocking_queue_destroy(queue);
 }
 
-void test_success_example() {
-  // Example of a simple successful test
-  NonBlockingQueueT* queue = non_blocking_queue_create();
+void test_pushfive_popfive() {
+  //Create queue
+  NonBlockingQueueT* queue;
+  non_blocking_queue_create(&queue);
   unsigned int* val;
+
   non_blocking_queue_push(queue, 10);
   non_blocking_queue_push(queue, 12);
   non_blocking_queue_push(queue, 13);
   non_blocking_queue_push(queue, 14);
   non_blocking_queue_push(queue, 15);
   int length = non_blocking_queue_length(queue);
-  printf("%d\n",length);
   assert(length == 5);
   non_blocking_queue_pop(queue, &val);
-  assert(val == 10);
+  assert((int)val == 10);
   non_blocking_queue_pop(queue, &val);
-  assert(val == 12);
+  assert((int)val == 12);
   non_blocking_queue_pop(queue, &val);
-  assert(val == 13);
+  assert((int)val == 13);
   non_blocking_queue_pop(queue, &val);
-  assert(val == 14);
+  assert((int)val == 14);
   non_blocking_queue_pop(queue, &val);
-  assert(val == 15);
+  assert((int)val == 15);
   length = non_blocking_queue_length(queue);
   assert(length == 0);
   non_blocking_queue_destroy(queue);
 }
 
-void test_failure_example() {
-  // Example of a simple failing test
-  assert(1 == 0);
+void test_pushfive_popthree() {
+  //Create queue
+  NonBlockingQueueT* queue;
+  non_blocking_queue_create(&queue);
+  unsigned int* val;
+
+  non_blocking_queue_push(queue, 10);
+  non_blocking_queue_push(queue, 12);
+  non_blocking_queue_push(queue, 13);
+  non_blocking_queue_push(queue, 14);
+  non_blocking_queue_push(queue, 15);
+
+  int length = non_blocking_queue_length(queue);
+  assert(length == 5);
+
+  non_blocking_queue_pop(queue, &val);
+  assert((unsigned int)val == 10);
+  non_blocking_queue_pop(queue, &val);
+  assert((unsigned int)val == 12);
+  non_blocking_queue_pop(queue, &val);
+  assert((unsigned int)val == 13);
+  non_blocking_queue_destroy(queue);
 }
 
 int main() {
   test_create_destroy();
-  test_success_example();
-  test_failure_example();
+  test_pushfive_popfive();
+  test_pushfive_popthree();
   return 0;
 }

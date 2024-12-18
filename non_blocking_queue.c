@@ -6,12 +6,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void non_blocking_queue_create(NonBlockingQueueT** queue) {
+  *queue = (NonBlockingQueueT*)malloc(sizeof(NonBlockingQueueT));
+  (*queue)->front = NULL;
+  (*queue)->rear = NULL;
+}
+
+/*
 NonBlockingQueueT* non_blocking_queue_create() {
   NonBlockingQueueT* queue = (NonBlockingQueueT*)malloc(sizeof(NonBlockingQueueT));
   queue->front = NULL;
   queue->rear = NULL;
   return queue;
 }
+*/
 
 void non_blocking_queue_destroy(NonBlockingQueueT* queue) {
   unsigned int* dummy;

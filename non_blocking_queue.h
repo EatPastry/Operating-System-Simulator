@@ -9,7 +9,8 @@ typedef struct NonBlockingQueue {
   struct List* rear;
 } NonBlockingQueueT;
 
-NonBlockingQueueT* non_blocking_queue_create();
+void non_blocking_queue_create(NonBlockingQueueT** queue);
+//NonBlockingQueueT* non_blocking_queue_create();
 void non_blocking_queue_destroy(NonBlockingQueueT* queue);
 
 void non_blocking_queue_push(NonBlockingQueueT* queue, unsigned int value);
