@@ -15,19 +15,20 @@ void blocking_queue_create(BlockingQueueT** queue) {
   (*queue)->term = 0;
 }
 
-void blocking_queue_destroy(BlockingQueueT* queue) {
+void blocking_queue_destroy(BlockingQueueT** queue) {
   unsigned int* dummy;
-  while(!blocking_queue_empty(queue)) {
-    struct List* node = queue->front;
-    queue->front = queue->front->succ;
+  while(!blocking_queue_empty(*queue)) {
+    struct List* node = (*queue)->front;
+    (*queue)->front = (*queue)->front->succ;
 
-    if(queue->front == NULL) {
-      queue->rear = NULL;
+    if((*queue)->front == NULL) {
+      (*queue)->rear = NULL;
     }
 
   free(node);
   }
-  free(queue);
+  free(*queue);
+  *queue = NULL;
 }
 
 void blocking_queue_push(BlockingQueueT* queue, unsigned int value) {

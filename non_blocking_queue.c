@@ -21,16 +21,26 @@ NonBlockingQueueT* non_blocking_queue_create() {
 }
 */
 
-void non_blocking_queue_destroy(NonBlockingQueueT* queue) {
+
+void non_blocking_queue_destroy(NonBlockingQueueT** queue) {
   unsigned int* dummy;
-  while(!non_blocking_queue_empty(queue)) {
-    non_blocking_queue_pop(queue, dummy);
+
+  while(!non_blocking_queue_empty(*queue)) {
+    struct List* node = (*queue)->front;
+    (*queue)->front = (*queue)->front->succ;
+
+    if((*queue)->front == NULL) {
+      (*queue)->rear = NULL;
+    }
+
+  free(node);
   }
-  free(queue);
+
+  free(*queue);
+  *queue = NULL;
 }
 
 void non_blocking_queue_push(NonBlockingQueueT* queue, unsigned int value) {
-  assert(queue);
   struct List* node = (struct List*)malloc(sizeof(struct List));
 
   node->value = value;

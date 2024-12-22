@@ -10,7 +10,7 @@ typedef struct BlockingQueue {
 } BlockingQueueT;
 
 void blocking_queue_create(BlockingQueueT** queue);
-void blocking_queue_destroy(BlockingQueueT* queue);
+void blocking_queue_destroy(BlockingQueueT** queue);
 
 void blocking_queue_push(BlockingQueueT* queue, unsigned int value);
 int blocking_queue_pop(BlockingQueueT* queue, unsigned int* value);

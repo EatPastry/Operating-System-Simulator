@@ -11,14 +11,14 @@ void test_create_destroy() {
   
   assert(non_blocking_queue_empty(queue) == 1);
   assert(non_blocking_queue_length(queue) == 0);
-  non_blocking_queue_destroy(queue);
+  non_blocking_queue_destroy(&queue);
 }
 
 void test_pushfive_popfive() {
   //Create queue
   NonBlockingQueueT* queue;
   non_blocking_queue_create(&queue);
-  unsigned int* val;
+  unsigned int val;
 
   non_blocking_queue_push(queue, 10);
   non_blocking_queue_push(queue, 12);
@@ -39,14 +39,14 @@ void test_pushfive_popfive() {
   assert((int)val == 15);
   length = non_blocking_queue_length(queue);
   assert(length == 0);
-  non_blocking_queue_destroy(queue);
+  non_blocking_queue_destroy(&queue);
 }
 
 void test_pushfive_popthree() {
   //Create queue
   NonBlockingQueueT* queue;
   non_blocking_queue_create(&queue);
-  unsigned int* val;
+  unsigned int val;
 
   non_blocking_queue_push(queue, 10);
   non_blocking_queue_push(queue, 12);
@@ -63,7 +63,7 @@ void test_pushfive_popthree() {
   assert((unsigned int)val == 12);
   non_blocking_queue_pop(queue, &val);
   assert((unsigned int)val == 13);
-  non_blocking_queue_destroy(queue);
+  non_blocking_queue_destroy(&queue);
 }
 
 int main() {
