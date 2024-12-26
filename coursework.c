@@ -28,9 +28,11 @@
 #endif
 
 int main() {
+  //const EvaluatorCodeT code;
   logger_start();
   logger_write("Starting simulator");
   simulator_start(SIMULATOR_THREADS, SIMULATOR_MAX_PROCESSES);
+  //simulator_create_process(code);
   event_source_start(EVENT_SOURCE_INTERVAL);
   environment_start(ENVIRONMENT_THREADS, ITERATIONS, BATCH_SIZE);
   environment_stop();
