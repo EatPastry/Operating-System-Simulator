@@ -24,19 +24,17 @@ void* terminating_routine(void* arg) {
 			simulator_wait(cpid);
 		}
 	}
-	printf("COMPLETE term\n");
 	return 0;
 }
 
 void* blocking_routine(void* arg) {
 	ProcessIdT cpid;
-	for(int i = 0; i < 0; i++) {
-		//for(int j = 0; j < public_batch_size; j++) {
+	for(int i = 0; i < public_iterations; i++) {
+		for(int j = 0; j < public_batch_size; j++) {
 			cpid = simulator_create_process(evaluator_blocking_terminates_after(5));
 			simulator_wait(cpid);
-		//}
+		}
 	}
-	printf("COMPLETE blocking\n");
 }
 
 void* infinite_routine(void* arg) {
@@ -48,7 +46,6 @@ void* infinite_routine(void* arg) {
 			simulator_wait(cpid);
 		}
 	}
-	printf("COMPLETE infinite asdasdasdasdasdasdasdasd\n");
 }
 
 void environment_start(unsigned int thread_count,
