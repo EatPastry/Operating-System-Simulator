@@ -15,7 +15,6 @@ void* caller(void* arg) {
         simulator_event();
         usleep(*((useconds_t*)arg));
     }
-    return 0;
 }
 void event_source_start(useconds_t interval) {
     useconds_t args[2];

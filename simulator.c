@@ -22,7 +22,8 @@ int* args;
 ProcessControlBlockT** process_table = NULL;
 int pCount, maxProcess;
 int processCount = 0;
-int processFinished = 0;
+int process_terminate = 0;
+int table_access = 0;
 int run = 1;
 NonBlockingQueueT* readyQueue; 
 NonBlockingQueueT* eventQueue;
@@ -30,7 +31,9 @@ NonBlockingQueueT* eventQueue;
 pthread_cond_t qu_empty_cond = PTHREAD_COND_INITIALIZER;
 pthread_cond_t qu_full_cond = PTHREAD_COND_INITIALIZER;
 pthread_cond_t wait_cond = PTHREAD_COND_INITIALIZER;
+pthread_cond_t term_cond = PTHREAD_COND_INITIALIZER;
 pthread_cond_t table_condition = PTHREAD_COND_INITIALIZER;
+pthread_cond_t table_access_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t qu_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t wait_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -43,93 +46,96 @@ void* simulator_routine(void* arg) {
   EvaluatorResultT result;
   unsigned int convertedPid;
   char buf[50];
+
   pthread_mutex_lock(&buffer_mutex);
-  snprintf(buf, 50, "Thread %d has started", *((int*)arg));
-  logger_write(buf);
+    snprintf(buf, 50, "Thread %d has started", *((int*)arg));
+    logger_write(buf);
   pthread_mutex_unlock(&buffer_mutex);
 
-    while (run) {
-        usleep(0.2);
+  while (run) {
+      usleep(0.1);
         //usleep(0.1);
-        if (non_blocking_queue_empty(readyQueue)) {
-        } else {
-            //printf("No processes in the ready queue. Thread %d is idle.\n", *((int *)arg));
-          pthread_mutex_lock(&queue_mutex);
-
-          if (!non_blocking_queue_empty(readyQueue)) {
+      if (non_blocking_queue_empty(readyQueue)) {
+      
+      } else {
+        pthread_mutex_lock(&queue_mutex);
           non_blocking_queue_pop(readyQueue, &currPid);
-          }
-          pthread_mutex_unlock(&queue_mutex);
-          
+        pthread_mutex_unlock(&queue_mutex);
+        if(process_table[currPid] != NULL){
+          if((*process_table[currPid]).state == ready) {
+
           pthread_mutex_lock(&buffer_mutex);
-          snprintf(buf, 50, "Thread %d is running process %d", *((int *)arg), currPid);
-          logger_write(buf);
+            snprintf(buf, 50, "Thread %d is running process %d", *((int *)arg), currPid);
+            logger_write(buf);
           pthread_mutex_unlock(&buffer_mutex);
 
+          if(process_table[currPid] != NULL){
           
-          pthread_mutex_lock(&table_mutex);
-          if (process_table[currPid] != NULL) {
-            (*process_table[currPid]).state = running;
-          }
-          pthread_mutex_unlock(&table_mutex);
-
           result = evaluator_evaluate((*process_table[currPid]).code, (*process_table[currPid]).last_PC);
-          
 
-          pthread_mutex_lock(&table_mutex);
-          if (process_table[currPid] != NULL) {
-            (*process_table[currPid]).last_PC = result.PC;
-            
+            pthread_mutex_lock(&table_mutex);
+            if(process_table[currPid] != NULL)
+              (*process_table[currPid]).last_PC = result.PC;
+            pthread_mutex_unlock(&table_mutex);
+            printf("set pc\n");
+
             if(result.reason == reason_blocked) {
-              (*process_table[currPid]).state = blocked;
-              pthread_mutex_lock(&event_queue_mutex);
-              non_blocking_queue_push(eventQueue, currPid);
-              pthread_mutex_unlock(&event_queue_mutex);
-
-            } else if(result.reason == reason_terminated) {
-              (*process_table[currPid]).state = terminated;
+              pthread_mutex_lock(&table_mutex);
+              if(process_table[currPid] != NULL)
+                (*process_table[currPid]).state = blocked;
               pthread_mutex_unlock(&table_mutex);
 
+              pthread_mutex_lock(&event_queue_mutex);
+              if(process_table[currPid] != NULL)
+                non_blocking_queue_push(eventQueue, currPid);
+              pthread_mutex_unlock(&event_queue_mutex);
+              pthread_cond_signal(&wait_cond);
+              printf("blocked\n");
+
+            } else if(result.reason == reason_terminated) {
+              pthread_mutex_lock(&table_mutex);
+              if(process_table[currPid] != NULL)
+                (*process_table[currPid]).state = terminated;
+              pthread_mutex_unlock(&table_mutex);
+
+              pthread_cond_signal(&term_cond);
+              printf("reason term\n");
+              /*if(non_blocking_queue_length(readyQueue) == 1) {
+                pthread_mutex_lock(&table_mutex);
+                  pthread_cond_wait(&table_condition, &table_mutex);
+                pthread_mutex_unlock(&table_mutex);
+              }*/
+              
             } else if(result.reason == reason_timeslice_ended) {
-              (*process_table[currPid]).state = ready;
+              pthread_mutex_lock(&table_mutex);
+              if(process_table[currPid] != NULL && (*process_table[currPid]).state != terminated)
+                (*process_table[currPid]).state = ready;
+              pthread_mutex_unlock(&table_mutex);
+              pthread_cond_signal(&table_access_cond);
 
               pthread_mutex_lock(&buffer_mutex);
-              snprintf(buf, 50, "Process %d timeslice ended, re-queuing", currPid);
-              logger_write(buf);
+                snprintf(buf, 50, "Process %d timeslice ended, re-queuing", currPid);
+                logger_write(buf);
               pthread_mutex_unlock(&buffer_mutex);
 
               pthread_mutex_lock(&queue_mutex);
-              non_blocking_queue_push(readyQueue, currPid);
+              if(process_table[currPid] != NULL)
+                non_blocking_queue_push(readyQueue, currPid);
               pthread_mutex_unlock(&queue_mutex);
-
-              pthread_mutex_unlock(&table_mutex);
-
-              pthread_mutex_unlock(&wait_mutex);
+              printf("time end\n");
+              //pthread_mutex_unlock(&wait_mutex);
 
             }
           }
-          /*
-          if(result.PC >= 5) {
-
-            if (process_table[currPid] != NULL) {
-              (*process_table[currPid]).state = terminated;
-            }
-
-            pthread_mutex_unlock(&table_mutex);
-            
-            processFinished = 1;
-            //pthread_cond_signal(&wait_cond);
-            //pthread_mutex_unlock(&wait_mutex);
-          } else {
-            //pthread_mutex_lock(&table_mutex);
-            if (process_table[currPid] != NULL) {
-              (*process_table[currPid]).state = ready;
-            }
-            
-          //pthread_cond_signal(&table_condition);
-         }*/
         } 
-        pthread_cond_signal(&table_condition);
+        /*else if((*process_table[currPid]).state == terminated) {
+          //printf("process %d term\n", currPid);
+          process_terminate = 1;
+          pthread_cond_signal(&term_cond);
+          
+        }*/
+          }
+        } 
             
     }
   return 0;
@@ -171,11 +177,12 @@ void simulator_stop() {
   free(process_table);
   non_blocking_queue_destroy(&readyQueue);
   non_blocking_queue_destroy(&eventQueue);
+  printf("STOP\n");
 }
 
 ProcessIdT simulator_create_process(EvaluatorCodeT const code) {
   ProcessIdT pid;
-  while(run) {
+  //while(run) {
   for(int i = 0; i < maxProcess; i++) {
     if(process_table[i] == NULL) {
       pthread_mutex_lock(&table_mutex);
@@ -183,7 +190,7 @@ ProcessIdT simulator_create_process(EvaluatorCodeT const code) {
       pthread_mutex_unlock(&table_mutex);
       
       pid = i;
-      processCount++;
+     // processCount++;
 
       ProcessControlBlockT pcb;
       pcb.pid = pid;
@@ -196,22 +203,23 @@ ProcessIdT simulator_create_process(EvaluatorCodeT const code) {
       pthread_mutex_unlock(&table_mutex);
 
       pthread_mutex_lock(&queue_mutex);
-      non_blocking_queue_push(readyQueue, pid);
+        non_blocking_queue_push(readyQueue, pid);
       pthread_mutex_unlock(&queue_mutex);
 
       char buf[50];
       pthread_mutex_lock(&buffer_mutex);
-      snprintf(buf, 50, "Process id: %d created", pid);
-      logger_write(buf);
+        snprintf(buf, 50, "Process id: %d created", pid);
+        logger_write(buf);
       pthread_mutex_unlock(&buffer_mutex);
       return pid;
     }
+    //pthread_mutex_unlock(&table_mutex);
   }
 
-  pthread_cond_wait(&qu_empty_cond, &qu_mutex);
+  //pthread_cond_wait(&qu_empty_cond, &qu_mutex);
 
-  }
-  pthread_mutex_unlock(&qu_mutex);
+  //}
+  //pthread_mutex_unlock(&qu_mutex);
   return -1; 
 }
 
@@ -226,73 +234,73 @@ void simulator_wait(ProcessIdT pid) {
   int i;
   char buf[50];
   pthread_mutex_lock(&buffer_mutex);
-  snprintf(buf, 50, "Waiting for process id: %d", pid);
-  logger_write(buf);
+    snprintf(buf, 50, "Waiting for process id: %d", pid);
+    logger_write(buf);
   pthread_mutex_unlock(&buffer_mutex);
    
   while(run) {
-  //pthread_mutex_lock(&wait_mutex);
-  //while(processFinished == 0) 
-  //  pthread_cond_wait(&wait_cond, &wait_mutex);
-  //pthread_mutex_lock(&wait_mutex);
-  //pthread_cond_wait(&wait_cond,&wait_mutex);
-  //pthread_mutex_unlock(&wait_mutex);
   
   found = 0;
-  pthread_mutex_lock(&table_mutex);
-  for(i = 0; i < maxProcess; i++) {
-    if(process_table[i] != NULL && (*process_table[i]).pid == pid) {
-      
-      found = 1;
-      //usleep(3);
-      if((*process_table[i]).state == terminated) {
-        
-       // pthread_cond_wait(&table_condition, &table_mutex);
-        pthread_mutex_lock(&buffer_mutex);
-        snprintf(buf, 50, "Process id: %d finished", pid);
-        logger_write(buf);
-        pthread_mutex_unlock(&buffer_mutex);
-
-        //printf("stoppped %d\n", process_table[i]);
-        if (process_table[i] != NULL) {
-          free(process_table[i]);
-          process_table[i] = NULL;
-        }
+      //pthread_mutex_lock(&table_mutex);
+      if (process_table[pid] != NULL) {
+        //pthread_cond_wait(&term_cond, &table_mutex);
+      if(process_table[pid] != NULL && (*process_table[pid]).state == blocked) {
+        pthread_mutex_lock(&wait_mutex);
+        pthread_cond_wait(&wait_cond, &wait_mutex);
+        pthread_mutex_unlock(&wait_mutex);
+        printf("waiting FOR ASD\n");
+      }
+      if(process_table[pid] != NULL && (*process_table[pid]).state == terminated) {
+        pthread_mutex_lock(&table_mutex);
+          free(process_table[pid]);
+          process_table[pid] = NULL;
         pthread_mutex_unlock(&table_mutex);
-        //pthread_cond_signal(&wait_cond);
-        processFinished = 0;
-        //pthread_mutex_unlock(&wait_mutex);
-        //pthread_cond_signal(&wait_cond);
-        
+        pthread_cond_signal(&table_condition);
+        pthread_cond_signal(&qu_empty_cond);
+          //pthread_mutex_unlock(&table_mutex);
+
+        pthread_mutex_lock(&buffer_mutex);
+          snprintf(buf, 50, "Process id: %d finished", pid);
+          logger_write(buf);
+        pthread_mutex_unlock(&buffer_mutex);
+        printf("freed %d\n", pid);
         return;
       }
-      
+      }
     }
 
   }
-  pthread_mutex_unlock(&table_mutex);
-
-  }
-}
 
 void simulator_kill(ProcessIdT pid) {
-  /*ProcessIdT dummy;
-  non_blocking_queue_pop(readyQueue, &dummy);
-  for(int i = 0; i < maxProcess; i++) {
-    if((*process_table[i]).pid == pid) {
-      free(process_table[i]);
-      process_table[i] = NULL;
-      processCount--;
-    }
-  }*/
+  char buf[50];
+  int kill_found = 1;
+      pthread_mutex_lock(&table_mutex);
+          (*process_table[pid]).state = terminated;
+      pthread_mutex_unlock(&table_mutex);
+      printf("KILL %d\n", pid);
+      //pthread_cond_signal(&term_cond);
+      //process_terminate = 1;
+
+      pthread_mutex_lock(&buffer_mutex);
+      snprintf(buf, 50, "Process id: %d killed", pid);
+      logger_write(buf);
+      pthread_mutex_unlock(&buffer_mutex);
+
 }
 
 void simulator_event() {
-  if(!non_blocking_queue_empty(eventQueue)) {
+  while(!non_blocking_queue_empty(eventQueue)) {
     ProcessIdT currPid;
     char buf[50];
+
+    pthread_mutex_lock(&event_queue_mutex);
     non_blocking_queue_pop(eventQueue, &currPid);
+    pthread_mutex_unlock(&event_queue_mutex);
+
+    pthread_mutex_lock(&queue_mutex);
     non_blocking_queue_push(readyQueue, currPid);
+    pthread_mutex_unlock(&queue_mutex);
+    printf("moved\n");
     pthread_mutex_lock(&buffer_mutex);
     snprintf(buf, 50, "Process id: %d moved to ready queue", currPid);
     logger_write(buf);
