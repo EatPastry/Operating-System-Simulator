@@ -104,17 +104,19 @@ void* simulator_routine(void* arg) {
               
             } else if(result.reason == reason_timeslice_ended) {
               pthread_mutex_lock(&table_mutex);
-              if(process_table[currPid] != NULL && (*process_table[currPid]).state != terminated)
-                (*process_table[currPid]).state = ready;
+              if(process_table[currPid] != NULL)
+                if((*process_table[currPid]).state != terminated)
+                  (*process_table[currPid]).state = ready;
               pthread_mutex_unlock(&table_mutex);
               pthread_cond_signal(&table_access_cond);
 
-              if(process_table[currPid] != NULL && (*process_table[currPid]).state != terminated) {
+              if(process_table[currPid] != NULL) 
+                if((*process_table[currPid]).state != terminated) {
                 pthread_mutex_lock(&buffer_mutex);
                   snprintf(buf, 50, "Process %d timeslice ended, re-queuing", currPid);
                   logger_write(buf);
                 pthread_mutex_unlock(&buffer_mutex);
-              }
+                }
 
               pthread_mutex_lock(&queue_mutex);
               if(process_table[currPid] != NULL)
@@ -291,7 +293,8 @@ void simulator_event() {
 
     if((!non_blocking_queue_empty(eventQueue))){
     pthread_mutex_lock(&event_queue_mutex);
-    non_blocking_queue_pop(eventQueue, &currPid);
+    if((!non_blocking_queue_empty(eventQueue)))
+      non_blocking_queue_pop(eventQueue, &currPid);
     pthread_mutex_unlock(&event_queue_mutex);
 
     pthread_mutex_lock(&table_mutex);
@@ -300,8 +303,8 @@ void simulator_event() {
     pthread_mutex_unlock(&table_mutex);
 
     pthread_mutex_lock(&queue_mutex);
-    if(process_table[currPid] != NULL)
-    non_blocking_queue_push(readyQueue, currPid);
+      if(process_table[currPid] != NULL)
+       non_blocking_queue_push(readyQueue, currPid);
     pthread_mutex_unlock(&queue_mutex);
 
     pthread_mutex_lock(&buffer_mutex);

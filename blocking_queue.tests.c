@@ -53,10 +53,10 @@ void* thread_test(void* arg) {
     pthread_mutex_unlock(&public_queue_mutex);
 
     if(*((int*)arg) == 0) {
-      printf("%d\n", val);
+      //printf("%d\n", val);
       assert(val == 5);
     } else {
-      printf("%d\n", val);
+      //printf("%d\n", val);
       //assert(val == 10);
     }
     
