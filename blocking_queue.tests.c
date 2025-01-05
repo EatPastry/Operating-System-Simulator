@@ -42,6 +42,34 @@ void test_push_pop() {
   blocking_queue_destroy(&queue);
 }
 
+void test_pushfive_popfive() {
+  //Create queue, push five values, check queue length, pop them all, destroy queue
+  BlockingQueueT* queue;
+  blocking_queue_create(&queue);
+  unsigned int val;
+
+  blocking_queue_push(queue, 10);
+  blocking_queue_push(queue, 12);
+  blocking_queue_push(queue, 13);
+  blocking_queue_push(queue, 14);
+  blocking_queue_push(queue, 15);
+  int length = blocking_queue_length(queue);
+  assert(length == 5);
+  blocking_queue_pop(queue, &val);
+  assert((int)val == 10);
+  blocking_queue_pop(queue, &val);
+  assert((int)val == 12);
+  blocking_queue_pop(queue, &val);
+  assert((int)val == 13);
+  blocking_queue_pop(queue, &val);
+  assert((int)val == 14);
+  blocking_queue_pop(queue, &val);
+  assert((int)val == 15);
+  length = blocking_queue_length(queue);
+  assert(length == 0);
+  blocking_queue_destroy(&queue);
+}
+
 void* thread_test(void* arg) {
   //check which thread is running, check value depending on thread
     unsigned int val;

@@ -14,6 +14,20 @@ void test_create_destroy() {
   non_blocking_queue_destroy(&queue);
 }
 
+void test_push_pop() {
+  //Create queue, push value, check queue length, pop, destroy queue
+  NonBlockingQueueT* queue;
+  non_blocking_queue_create(&queue);
+  unsigned int val;
+
+  non_blocking_queue_push(queue, 7);
+  assert(non_blocking_queue_length(queue) == 1);
+  non_blocking_queue_pop(queue, &val);
+  assert(val == 7);
+  assert(non_blocking_queue_length(queue) == 0);
+  non_blocking_queue_destroy(&queue);
+}
+
 void test_pushfive_popfive() {
   //Create queue, push five values, check queue length, pop them all, destroy queue
   NonBlockingQueueT* queue;
@@ -78,6 +92,7 @@ void test_pop_empty() {
 
 int main() {
   test_create_destroy();
+  test_push_pop();
   test_pushfive_popfive();
   test_pushfive_popthree();
   test_pop_empty();
