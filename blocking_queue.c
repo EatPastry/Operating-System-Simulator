@@ -2,10 +2,14 @@
 #include "blocking_queue.h"
 #include "utilities.h"
 #include "list.h"
-#include <semaphore.h>
+#include <pthread.h>
+
+pthread_cond_t blocking_queue_emp = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t blocking_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void blocking_queue_terminate(BlockingQueueT* queue) {
   queue->term = 1;
+  pthread_cond_signal(&blocking_queue_emp);
 }
 
 void blocking_queue_create(BlockingQueueT** queue) {
@@ -34,7 +38,7 @@ void blocking_queue_destroy(BlockingQueueT** queue) {
 void blocking_queue_push(BlockingQueueT* queue, unsigned int value) {
   struct List* node = (struct List*)malloc(sizeof(struct List));
 
-  node->value = value;
+  node->value = value; 
   node->pred = NULL;
   node->succ = NULL;
 
@@ -46,6 +50,7 @@ void blocking_queue_push(BlockingQueueT* queue, unsigned int value) {
 
   queue->rear->succ = node;
   queue->rear = node;
+  pthread_cond_signal(&blocking_queue_emp);
 }
 
 int blocking_queue_pop(BlockingQueueT* queue, unsigned int* value) {
@@ -53,9 +58,14 @@ int blocking_queue_pop(BlockingQueueT* queue, unsigned int* value) {
     return 1;
   }
 
-  if(blocking_queue_empty(queue)) {
-    //block
-  }
+  
+    pthread_mutex_lock(&blocking_mutex);
+    while(blocking_queue_empty(queue))
+      pthread_cond_wait(&blocking_queue_emp, &blocking_mutex);
+    if(queue->term == 1) {
+      return 1;
+    }
+    pthread_mutex_unlock(&blocking_mutex);
 
   struct List* node = queue->front;
   queue->front = queue->front->succ;

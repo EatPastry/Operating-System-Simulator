@@ -15,7 +15,7 @@ void test_create_destroy() {
 }
 
 void test_pushfive_popfive() {
-  //Create queue
+  //Create queue, push five values, check queue length, pop them all, destroy queue
   NonBlockingQueueT* queue;
   non_blocking_queue_create(&queue);
   unsigned int val;
@@ -43,7 +43,7 @@ void test_pushfive_popfive() {
 }
 
 void test_pushfive_popthree() {
-  //Create queue
+  //Create queue, push five values, check queue length, pop only three, destroy queue.
   NonBlockingQueueT* queue;
   non_blocking_queue_create(&queue);
   unsigned int val;
@@ -66,9 +66,20 @@ void test_pushfive_popthree() {
   non_blocking_queue_destroy(&queue);
 }
 
+void test_pop_empty() {
+  //Create queue, check the length = 0, check popping was unsuccessful, destroy queue
+  NonBlockingQueueT* queue;
+  non_blocking_queue_create(&queue);
+  unsigned int val;
+  assert(non_blocking_queue_length(queue) == 0);
+  assert(non_blocking_queue_pop(queue, &val) == 1);
+  non_blocking_queue_destroy(&queue);
+}
+
 int main() {
   test_create_destroy();
   test_pushfive_popfive();
   test_pushfive_popthree();
+  test_pop_empty();
   return 0;
 }

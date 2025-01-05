@@ -241,8 +241,10 @@ void simulator_wait(ProcessIdT pid) {
       
       if(process_table[pid] != NULL && (*process_table[pid]).state == terminated) {
         pthread_mutex_lock(&table_mutex);
-          free(process_table[pid]);
-          process_table[pid] = NULL;
+          if(process_table[pid] != NULL && (*process_table[pid]).state == terminated) {
+            free(process_table[pid]);
+            process_table[pid] = NULL;
+          }
         pthread_mutex_unlock(&table_mutex);
         pthread_cond_signal(&table_condition);
         pthread_cond_signal(&qu_empty_cond);
