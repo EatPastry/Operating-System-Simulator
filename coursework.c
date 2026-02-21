@@ -2,6 +2,7 @@
 #include "environment.h"
 #include "event_source.h"
 #include "logger.h"
+#include <stdio.h>
 
 #ifndef SIMULATOR_THREADS
 #define SIMULATOR_THREADS 2
@@ -28,6 +29,7 @@
 #endif
 
 int main() {
+  //const EvaluatorCodeT code;
   logger_start();
   logger_write("Starting simulator");
   simulator_start(SIMULATOR_THREADS, SIMULATOR_MAX_PROCESSES);
